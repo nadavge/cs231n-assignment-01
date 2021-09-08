@@ -2,6 +2,8 @@ from builtins import range
 import numpy as np
 from random import shuffle
 
+MAGIC_TEST_POINTS=[]#[(0,0), (13,3), (102, 1)]
+
 def svm_loss_naive(W, X, y, reg):
     """
     Structured SVM loss function, naive implementation (with loops).
@@ -33,6 +35,8 @@ def svm_loss_naive(W, X, y, reg):
             if j == y[i]:
                 continue
             margin = scores[j] - correct_class_score + 1  # note delta = 1
+            if (i, j) in MAGIC_TEST_POINTS:
+                print(f"{i},{j} = {margin} ({correct_class_score}, {scores[j]}")
             if margin > 0:
                 dW[:, j] = dW[:, j] + X[i]
                 dW[:, y[i]] = dW[:, y[i]] - X[i]
@@ -57,7 +61,6 @@ def svm_loss_naive(W, X, y, reg):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     dW += 2*reg*W
-
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
@@ -69,8 +72,13 @@ def svm_loss_vectorized(W, X, y, reg):
 
     Inputs and outputs are the same as svm_loss_naive.
     """
-    loss = 0.0
+    # D - sample length, C - classes, N - number of training samples
+    X = X.T # D x N
+    W = W.T # C x D
     dW = np.zeros(W.shape)  # initialize the gradient as zero
+    num_training = X.shape[1]
+    num_classes = W.shape[0]
+    loss = 0.0
 
     #############################################################################
     # TODO:                                                                     #
@@ -79,8 +87,20 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    scores = W.dot(X) # C x N
+    correct_scores = scores[y, range(num_training)]
+    loss_mat = (scores - correct_scores) + 1
+    # Remove self-counting of the score of the correct label with itself
+    loss_mat[y, range(num_training)] = 0
+    #for (i, j) in MAGIC_TEST_POINTS:
+    #    print(f"{i},{j} = {loss_mat[i, j]} ({correct_scores[i]} {scores[i, j]})")
+    margin_passed = loss_mat < 0
+    loss_mat[margin_passed] = 0
+    # REDUCTED:
+    # We reduce 1 from the loss at the end because we summed a loss of 1
+    # for each of the training samples since we didn't zero the y[i]-th column
+    # and that adds `num_training` which on average is an extra 1 to the total loss
+    loss = (reg*(np.sum(W)**2)) + (np.sum(loss_mat)/num_training)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     #############################################################################
@@ -94,8 +114,16 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Marks for each i, c whether score[c] - score[y[i]] + 1 > 0 for sample i
+    margin_failed = (~margin_passed).astype(int) # C x N
+    dW_summer = np.zeros([num_classes, num_training])
+    dW_summer[y, range(num_training)] -= np.sum(margin_failed, axis=0)
+    dW_summer += margin_failed
+    print(dW_summer)
+
+    dW = dW_summer.dot(X.T) / num_training
+    dW += 2*reg*W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    return loss, dW
+    return loss, dW.T
