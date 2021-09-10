@@ -22,6 +22,8 @@ def softmax_loss_naive(W, X, y, reg):
     - gradient with respect to weights W; an array of same shape as W
     """
     # Initialize the loss and gradient to zero.
+    num_training = X.shape[0]
+    num_classes = W.shape[1]
     loss = 0.0
     dW = np.zeros_like(W)
 
@@ -33,7 +35,23 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    for i in range(num_training):
+        scores = X[i].dot(W)
+        adjusted_scores_sum = 0.0
+        for j in range(num_classes):
+            adjusted_scores_sum += np.exp(scores[j])
+        
+        for j in range(num_classes):
+            dW[:, j] += (np.exp(scores[j])*X[i])/adjusted_scores_sum
+        dW[:, y[i]] -= X[i]
+
+        loss += np.log(adjusted_scores_sum) - scores[y[i]]
+
+    loss = loss/num_training
+    loss += reg*(np.sum(W*W))
+
+    dW = dW/num_training
+    dW += 2*reg*W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
