@@ -116,10 +116,22 @@ def svm_loss_vectorized(W, X, y, reg):
 
     # Marks for each i, c whether score[c] - score[y[i]] + 1 > 0 for sample i
     margin_failed = (~margin_passed).astype(int) # C x N
+
+    # This is the hardest part in code to explain, but basically what we
+    # can see is that: for each sample i, we add up to the j-th class the value of Xi,
+    # and subtract from the correct class the value of Xi. Therefore, we want to have
+    # A matrix to describe for each training sample and class whether to add/reduce Xi.
+    # 
+    # Since matrix multiplication ends up as a sum over the middle dimesion
+    # (in the case of A x B times B x C we sum over the B part), we can start with a
+    # matrix of 1's for every time the training sample crossed the margin for a specific
+    # class. We already have the opposite of that for the loss calculation to zero the negatives,
+    # So we can use that negated. We then have the exact matrix for the summation of Xi's for the classes,
+    # and the amount we need to subtract Xi from the correct class will simply be the number of margins
+    # that we crossed for that training sample (their sum if each is marked with a 1) :) 
     dW_summer = np.zeros([num_classes, num_training])
     dW_summer[y, range(num_training)] -= np.sum(margin_failed, axis=0)
     dW_summer += margin_failed
-    print(dW_summer)
 
     dW = dW_summer.dot(X.T) / num_training
     dW += 2*reg*W
