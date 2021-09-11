@@ -93,7 +93,8 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.copy(x)
+    out[x<0] = 0
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -119,8 +120,8 @@ def relu_backward(dout, cache):
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    dx = np.copy(dout)
+    dx[x<0] = 0
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -151,7 +152,21 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = x.T # C x N
+    num_training = scores.shape[1]
+
+    correct_scores = scores[y, range(num_training)] # N
+    loss_mat = (scores - correct_scores) + 1
+    # Remove self-counting of the score of the correct label with itself
+    loss_mat[y, range(num_training)] = 0
+
+    margin_passed = loss_mat < 0
+    loss_mat[margin_passed] = 0
+    loss = np.sum(loss_mat)/num_training
+    margin_failed = (~margin_passed).astype(int)
+    dx = margin_failed
+    dx[y, range(num_training)] -= np.sum(margin_failed, axis=0)
+    dx = dx.T/num_training
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -182,7 +197,16 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = x.T # C x N
+    num_training = scores.shape[1]
+    score_exps = np.exp(scores)
+    exps_sum = np.sum(score_exps, axis=0) # N
+
+    dx = score_exps/exps_sum
+    dx[y, range(scores.shape[1])] -= 1
+
+    loss = np.mean(np.log(exps_sum) - scores[y, range(scores.shape[1])])
+    dx = dx.T/num_training
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

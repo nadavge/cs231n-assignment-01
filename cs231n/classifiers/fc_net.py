@@ -55,8 +55,22 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # - x: A numpy array containing input data, of shape (N, d_1, ..., d_k)
+        # - w: A numpy array of weights, of shape (D, M)
+        # - b: A numpy array of biases, of shape (M,)
 
+        
+        W1 = np.random.normal(0.0, scale=weight_scale, size=(input_dim, hidden_dim))
+        b1 = np.zeros(hidden_dim)
+        W2 = np.random.normal(0.0, scale=weight_scale, size=(hidden_dim, num_classes))
+        b2 = np.zeros(num_classes)
+
+        self.params = {
+            'W1': W1,
+            'b1': b1,
+            'W2': W2,
+            'b2': b2
+        }
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -88,7 +102,9 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out, cache_affine1 = affine_forward(np.reshape(X, (X.shape[0], np.prod(X.shape[1:]))), self.params["W1"], self.params["b1"])
+        out, cache_relu1 = relu_forward(out)
+        scores, cache_affine2 = affine_forward(out, self.params["W2"], self.params["b2"])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -112,7 +128,17 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dout = softmax_loss(scores, y)
+        dout, grads["W2"], grads["b2"] = affine_backward(dout, cache_affine2)
+        grads["W2"] += 2*self.reg*self.params["W2"]
+        grads["b2"] += 2*self.reg*self.params["b2"]
+        loss += 0.5*self.reg*(self.params["W2"]*self.params["W2"]).sum()
+
+        dout = relu_backward(dout, cache_relu1)
+        dout, grads["W1"], grads["b1"] = affine_backward(dout, cache_affine1)
+        grads["W1"] += 2*self.reg*self.params["W1"]
+        grads["b1"] += 2*self.reg*self.params["b1"]
+        loss += 0.5*self.reg*(self.params["W1"]*self.params["W1"]).sum()
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
